@@ -8,6 +8,7 @@
     <link rel="apple-touch-icon" href="icon-192.png">
     <meta name="theme-color" content="#e50914">
     <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="icon-192.png">
 </head>
 <body>
 
@@ -44,8 +45,9 @@
 
 <script src="app.js"></script>
 <script>
+    // Registra o Service Worker para funcionar offline
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js').catch(err => console.log(err));
+        navigator.serviceWorker.register('sw.js').catch(err => console.log("SW Erro:", err));
     }
 </script>
 </body>

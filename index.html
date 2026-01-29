@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Medu Manga Reader</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="theme-color" content="#e50914">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav id="top-nav">
+    <button onclick="showLibrary()" class="nav-btn">🏠</button>
+    <span id="manga-title">Medu Reader</span>
+    <div class="nav-actions">
+        <button onclick="toggleNightMode()" id="theme-btn">🌙</button>
+        <label for="file-upload" class="custom-upload">➕</label>
+        <input type="file" id="file-upload" multiple accept="image/*">
+    </div>
+</nav>
+
+<div id="search-container">
+    <input type="text" id="manga-search" placeholder="🔍 Buscar mangá online..." onchange="searchManga(this.value)">
+</div>
+
+<main id="main-content">
+    <div id="online-results"></div>
+    <div id="library-view"></div>
+    
+    <div id="viewer" class="webtoon-mode" style="display: none;"></div>
+    
+    <div id="end-chapter-nav" style="display:none;">
+        <button onclick="nextChapter()" class="next-btn">➡️ Próximo Capítulo</button>
+    </div>
+</main>
+
+<div id="controls">
+    <button onclick="toggleReadMode()" id="read-mode-btn" title="Modo de Leitura">📱</button>
+    <input type="range" id="zoom-slider" min="1" max="3" step="0.1" value="1">
+    <button onclick="window.scrollTo({top:0, behavior:'smooth'})">🔝</button>
+</div>
+
+<script src="app.js"></script>
+<script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(err => console.log(err));
+    }
+</script>
+</body>
+</html>

@@ -3,19 +3,15 @@ const viewer = document.getElementById('viewer');
 const onlineResults = document.getElementById('online-results');
 const libraryView = document.getElementById('library-view');
 
-// --- SISTEMA DE TIMER (DEBOUNCE) ---
+// --- TIMER DE BUSCA (DEBOUNCE) ---
 let debounceTimer;
 function searchMangaDebounced(query) {
-    if (!query || query.trim().length === 0) {
-        onlineResults.innerHTML = '';
+    clearTimeout(debounceTimer);
+    if (!query || query.trim().length < 3) {
+        onlineResults.innerHTML = "";
         return;
     }
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-        if (query.trim().length >= 3) {
-            searchManga(query);
-        }
-    }, 500);
+    debounceTimer = setTimeout(() => searchManga(query), 500);
 }
 
 // LAZY LOADING
@@ -32,28 +28,21 @@ const imageObserver = new IntersectionObserver((entries, obs) => {
 
 // BUSCA API "BLINDADA"
 async function searchManga(query) {
-    onlineResults.innerHTML = "<p style='color: white; text-align: center;'>A procurar mangás...</p>";
+    onlineResults.innerHTML = "<p style='color:white; text-align:center;'>Buscando...</p>";
     try {
         const res = await fetch(`${API_URL}/manga?title=${query}&limit=15&includes[]=cover_art&contentRating[]=safe&contentRating[]=suggestive`);
-        if (!res.ok) throw new Error("Erro na rede");
-        
+        if (!res.ok) throw new Error();
         const data = await res.json();
-        onlineResults.innerHTML = "";
         
+        onlineResults.innerHTML = "";
         if (!data.data || data.data.length === 0) {
-            onlineResults.innerHTML = "<p style='color: white; text-align: center;'>Nada encontrado.</p>";
+            onlineResults.innerHTML = "<p style='color:white; text-align:center;'>Nada encontrado.</p>";
             return;
         }
 
         data.data.forEach(manga => {
             const id = manga.id;
-            
-            // Lógica para pegar qualquer título que existir e não dar erro
-            const title = manga.attributes.title.en || 
-                          manga.attributes.title.ja || 
-                          Object.values(manga.attributes.title)[0] || 
-                          "Título Indisponível";
-
+            const title = manga.attributes.title.en || manga.attributes.title.ja || Object.values(manga.attributes.title)[0] || "Sem título";
             const coverRel = manga.relationships.find(r => r.type === 'cover_art');
             const cover = coverRel?.attributes?.fileName;
             
@@ -61,27 +50,21 @@ async function searchManga(query) {
             card.className = 'manga-card';
             card.onclick = () => showChapters(id, title);
             
-            const coverUrl = cover 
-                ? `https://uploads.mangadex.org/covers/${id}/${cover}.256.jpg`
-                : 'https://via.placeholder.com/256x360?text=Sem+Capa';
-
+            const coverUrl = cover ? `https://uploads.mangadex.org/covers/${id}/${cover}.256.jpg` : 'https://via.placeholder.com/256';
             card.innerHTML = `<img src="${coverUrl}"><p>${title}</p>`;
             onlineResults.appendChild(card);
         });
-    } catch (e) { 
-        console.error("Erro na busca:", e);
-        onlineResults.innerHTML = "<p style='color: #ff4444; text-align: center;'>Erro ao ligar à API. Tente novamente.</p>"; 
+    } catch (e) {
+        onlineResults.innerHTML = "<p style='color:#ff4444; text-align:center;'>Erro ao ligar à API. Tente novamente.</p>";
     }
 }
 
-// LISTAGEM DE CAPÍTULOS
 async function showChapters(id, title) {
-    onlineResults.innerHTML = `<h3 style='color:white; padding:10px;'>${title}</h3><p style='color:white;'>A carregar capítulos...</p>`;
+    onlineResults.innerHTML = `<h3 style='color:white;'>${title}</h3><p style='color:white;'>Carregando capítulos...</p>`;
     try {
-        const res = await fetch(`${API_URL}/manga/${id}/feed?translatedLanguage[]=pt-br&translatedLanguage[]=en&limit=100&order[chapter]=desc`);
+        const res = await fetch(`${API_URL}/manga/${id}/feed?translatedLanguage[]=pt-br&translatedLanguage[]=en&order[chapter]=desc&limit=50`);
         const data = await res.json();
         onlineResults.innerHTML = `<h3 style='color:white; padding:10px;'>${title}</h3>`;
-        
         data.data.forEach(ch => {
             const item = document.createElement('div');
             item.className = 'manga-item';
@@ -89,29 +72,18 @@ async function showChapters(id, title) {
             item.onclick = () => loadOnlineChapter(ch.id);
             onlineResults.appendChild(item);
         });
-    } catch (e) {
-        onlineResults.innerHTML = "<p style='color:red;'>Erro ao carregar capítulos.</p>";
-    }
+    } catch (e) { onlineResults.innerHTML = "Erro nos capítulos."; }
 }
 
-// LEITOR
 async function loadOnlineChapter(chId) {
-    viewer.innerHTML = "<p style='color:white; text-align:center; padding-top:50px;'>A preparar páginas...</p>";
-    try {
-        const res = await fetch(`${API_URL}/at-home/server/${chId}`);
-        const data = await res.json();
-        const host = data.baseUrl;
-        const hash = data.chapter.hash;
-        const urls = data.chapter.data.map(f => `${host}/data/${hash}/${f}`);
-        renderImages(urls);
-    } catch (e) {
-        alert("Erro ao abrir capítulo.");
-    }
+    const res = await fetch(`${API_URL}/at-home/server/${chId}`);
+    const data = await res.json();
+    const urls = data.chapter.data.map(f => `${data.baseUrl}/data/${data.chapter.hash}/${f}`);
+    renderImages(urls);
 }
 
 function renderImages(urls) {
     onlineResults.style.display = 'none';
-    libraryView.style.display = 'none';
     viewer.style.display = 'block';
     viewer.innerHTML = '';
     urls.forEach(url => {
@@ -121,22 +93,13 @@ function renderImages(urls) {
         viewer.appendChild(img);
         imageObserver.observe(img);
     });
-    window.scrollTo(0, 0);
+    window.scrollTo(0,0);
 }
 
-function showLibrary() {
-    viewer.style.display = 'none';
-    viewer.innerHTML = '';
-    onlineResults.style.display = 'block';
-    libraryView.style.display = 'block';
-}
-
+function showLibrary() { viewer.style.display = 'none'; onlineResults.style.display = 'block'; window.scrollTo(0,0); }
 function toggleNightMode() { document.body.classList.toggle('night-mode'); }
 function toggleReadMode() { 
-    viewer.classList.toggle('classic-mode');
+    viewer.classList.toggle('classic-mode'); 
     document.getElementById('read-mode-btn').innerText = viewer.classList.contains('classic-mode') ? '📖' : '📱';
 }
-
-document.getElementById('zoom-slider').oninput = (e) => {
-    viewer.style.width = (e.target.value * 100) + "%";
-};
+document.getElementById('zoom-slider').oninput = (e) => { viewer.style.width = (e.target.value * 100) + "%"; };

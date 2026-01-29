@@ -6,9 +6,9 @@
     <title>Cronos Manga Reader</title>
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="icon" href="icon-192.png">
     <meta name="theme-color" content="#e50914">
     <link rel="stylesheet" href="style.css">
-    <link rel="icon" href="icon-192.png">
 </head>
 <body>
 
@@ -33,7 +33,7 @@
 </main>
 
 <div id="controls">
-    <button onclick="toggleReadMode()" id="read-mode-btn" title="Modo de Leitura">📱</button>
+    <button onclick="toggleReadMode()" id="read-mode-btn">📱</button>
     <input type="range" id="zoom-slider" min="1" max="3" step="0.1" value="1">
     <button onclick="window.scrollTo({top:0, behavior:'smooth'})">🔝</button>
 </div>
@@ -41,7 +41,7 @@
 <script src="app.js"></script>
 <script>
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js').catch(err => console.log("Erro SW:", err));
+        navigator.serviceWorker.register('sw.js').catch(err => console.log(err));
     }
 </script>
 </body>

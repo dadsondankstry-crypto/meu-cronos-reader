@@ -8,24 +8,17 @@ let library = JSON.parse(localStorage.getItem('manga_library')) || [];
 let debounceTimer;
 
 function searchMangaDebounced(query) {
-    // Se o usuário apagar tudo, limpa os resultados
     if (!query) {
-        document.getElementById('online-results').innerHTML = '';
+        onlineResults.innerHTML = '';
         return;
     }
-
-    // Limpa o timer anterior para recomeçar a contagem
     clearTimeout(debounceTimer);
-
-    // Define um novo timer de 500ms (meio segundo)
     debounceTimer = setTimeout(() => {
-        // Só faz a busca se o usuário digitou pelo menos 3 letras
         if (query.length >= 3) {
             searchManga(query);
         }
-    }, 500);
+    }, 500); // Espera 500ms (meio segundo) antes de buscar
 }
-// ----------------------------------
 
 // LAZY LOADING
 const imageObserver = new IntersectionObserver((entries, obs) => {
@@ -46,31 +39,51 @@ async function searchManga(query) {
         const res = await fetch(`${API_URL}/manga?title=${query}&limit=10&includes[]=cover_art`);
         const data = await res.json();
         onlineResults.innerHTML = "";
+        
+        if (data.data.length === 0) {
+            onlineResults.innerHTML = "Nenhum mangá encontrado.";
+            return;
+        }
+
         data.data.forEach(manga => {
             const id = manga.id;
-            const title = manga.attributes.title.en || manga.attributes.title.ja;
-            const cover = manga.relationships.find(r => r.type === 'cover_art')?.attributes?.fileName;
+            const title = manga.attributes.title.en || manga.attributes.title.ja || "Sem título";
+            const coverRelationship = manga.relationships.find(r => r.type === 'cover_art');
+            const cover = coverRelationship?.attributes?.fileName;
+            
             const card = document.createElement('div');
             card.className = 'manga-card';
             card.onclick = () => showChapters(id, title);
-            card.innerHTML = `<img src="https://uploads.mangadex.org/covers/${id}/${cover}.256.jpg"><p>${title}</p>`;
+            
+            const coverUrl = cover 
+                ? `https://uploads.mangadex.org/covers/${id}/${cover}.256.jpg`
+                : 'https://via.placeholder.com/256x360?text=Sem+Capa';
+
+            card.innerHTML = `<img src="${coverUrl}"><p>${title}</p>`;
             onlineResults.appendChild(card);
         });
-    } catch (e) { onlineResults.innerHTML = "Erro na busca."; }
+    } catch (e) { 
+        console.error(e);
+        onlineResults.innerHTML = "Erro na busca. Tente novamente."; 
+    }
 }
 
 async function showChapters(id, title) {
     onlineResults.innerHTML = `<h3>${title}</h3><p>Carregando capítulos...</p>`;
-    const res = await fetch(`${API_URL}/manga/${id}/feed?translatedLanguage[]=pt-br&translatedLanguage[]=en&limit=50&order[chapter]=desc`);
-    const data = await res.json();
-    onlineResults.innerHTML = `<h3>${title}</h3>`;
-    data.data.forEach(ch => {
-        const item = document.createElement('div');
-        item.className = 'manga-item';
-        item.innerHTML = `<span>Cap. ${ch.attributes.chapter}</span> ➔`;
-        item.onclick = () => loadOnlineChapter(ch.id);
-        onlineResults.appendChild(item);
-    });
+    try {
+        const res = await fetch(`${API_URL}/manga/${id}/feed?translatedLanguage[]=pt-br&translatedLanguage[]=en&limit=50&order[chapter]=desc`);
+        const data = await res.json();
+        onlineResults.innerHTML = `<h3>${title}</h3>`;
+        data.data.forEach(ch => {
+            const item = document.createElement('div');
+            item.className = 'manga-item';
+            item.innerHTML = `<span>Cap. ${ch.attributes.chapter || '?' }</span> ➔`;
+            item.onclick = () => loadOnlineChapter(ch.id);
+            onlineResults.appendChild(item);
+        });
+    } catch (e) {
+        onlineResults.innerHTML = "Erro ao carregar capítulos.";
+    }
 }
 
 async function loadOnlineChapter(chId) {
@@ -98,6 +111,7 @@ function showLibrary() {
     viewer.style.display = 'none';
     onlineResults.style.display = 'block';
     libraryView.style.display = 'block';
+    window.scrollTo(0, 0);
 }
 
 function toggleNightMode() {
@@ -111,5 +125,4 @@ function toggleReadMode() {
 
 document.getElementById('zoom-slider').oninput = (e) => {
     viewer.style.width = (e.target.value * 100) + "%";
-
 };

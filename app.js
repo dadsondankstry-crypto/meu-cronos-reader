@@ -4,6 +4,29 @@ const libraryView = document.getElementById('library-view');
 const onlineResults = document.getElementById('online-results');
 let library = JSON.parse(localStorage.getItem('manga_library')) || [];
 
+// --- SISTEMA DE TIMER (DEBOUNCE) ---
+let debounceTimer;
+
+function searchMangaDebounced(query) {
+    // Se o usuário apagar tudo, limpa os resultados
+    if (!query) {
+        document.getElementById('online-results').innerHTML = '';
+        return;
+    }
+
+    // Limpa o timer anterior para recomeçar a contagem
+    clearTimeout(debounceTimer);
+
+    // Define um novo timer de 500ms (meio segundo)
+    debounceTimer = setTimeout(() => {
+        // Só faz a busca se o usuário digitou pelo menos 3 letras
+        if (query.length >= 3) {
+            searchManga(query);
+        }
+    }, 500);
+}
+// ----------------------------------
+
 // LAZY LOADING
 const imageObserver = new IntersectionObserver((entries, obs) => {
     entries.forEach(entry => {
@@ -88,4 +111,5 @@ function toggleReadMode() {
 
 document.getElementById('zoom-slider').oninput = (e) => {
     viewer.style.width = (e.target.value * 100) + "%";
+
 };
